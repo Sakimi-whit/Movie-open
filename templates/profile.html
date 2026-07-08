@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心 - 电影平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>个人信息</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>用户名：</strong> {{ current_user.username }}</p>
+                <p><strong>邮箱：</strong> {{ current_user.email }}</p>
+                <p><strong>注册时间：</strong> {{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>会员状态</h5>
+            </div>
+            <div class="card-body">
+                {% if user_membership %}
+                    <p><strong>当前等级：</strong> {{ user_membership.membership_level.level_name }}</p>
+                    <p><strong>有效期：</strong> {{ user_membership.start_date }} 至 {{ user_membership.end_date }}</p>
+                    <p><strong>每日观影上限：</strong> {{ user_membership.membership_level.max_movies_per_day }} 部</p>
+                {% else %}
+                    <p>您当前没有有效会员，请升级</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>升级会员</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for level in membership_levels %}
+                        {% if not user_membership or level.id != user_membership.membership_level_id %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h5>{{ level.level_name }}</h5>
+                                    <p class="text-muted">{{ level.description }}</p>
+                                    <p class="h4">¥{{ level.price }}</p>
+                                    <p>每日{{ level.max_movies_per_day }}部</p>
+                                    <form method="POST" action="{{ url_for('membership.upgrade_membership') }}">
+                                        <input type="hidden" name="membership_level_id" value="{{ level.id }}">
+                                        <button type="submit" class="btn btn-primary">升级</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

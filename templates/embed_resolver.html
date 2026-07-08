@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}播放 - {{ movie.title }}{% endblock %}
+
+{% block content %}
+<div style="padding-top: 80px; background: #0d0d0d; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+  <div style="max-width: 500px; margin: 0 auto; padding: 40px; text-align: center; background: #1a1a2e; border-radius: 16px; border: 1px solid #2d3139;">
+    <span style="font-size: 64px;">🎬</span>
+    <h2 style="color: #fff; margin: 16px 0 8px;">即将播放</h2>
+    <p style="color: #9ca3af; font-size: 14px; margin-bottom: 8px;">
+      {{ movie.title }}
+    </p>
+    <p style="color: #666; font-size: 12px; margin-bottom: 24px;">
+      解析站：{{ resolver.name }}
+    </p>
+    <a href="{{ resolver.url }}" target="_blank" id="playBtn"
+       style="display: inline-block; padding: 14px 48px; background: #e50914; color: #fff; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 600; transition: background 0.3s;">
+      ▶ 立即播放
+    </a>
+    <br>
+    <a href="{{ url_for('movies.movie_detail', movie_id=movie.id) }}"
+       style="display: inline-block; margin-top: 16px; color: #888; font-size: 13px; text-decoration: none;">
+      ← 返回详情
+    </a>
+  </div>
+</div>
+
+<script>
+  // 页面加载后自动跳转
+  window.addEventListener('load', function() {
+    var btn = document.getElementById('playBtn');
+    if (btn) {
+      // 延迟1秒后自动打开
+      setTimeout(function() {
+        window.open(btn.href, '_blank');
+        // 也可以直接跳转：window.location.href = btn.href;
+      }, 500);
+    }
+  });
+</script>
+{% endblock %}

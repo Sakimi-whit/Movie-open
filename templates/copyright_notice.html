@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="card border-warning shadow-lg">
+        <div class="card-header bg-warning text-dark">
+            <h2><i class="fas fa-exclamation-triangle me-2"></i> 使用限制</h2>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <p><strong>《{{ movie.title }}》仅供内网观看</strong></p>
+                <ul>
+                    <li>此内容仅限家庭内部网络（192.168.x.x/10.x.x.x）访问</li>
+                    <li>禁止通过公网IP或域名访问此播放器</li>
+                    <li>非盈利性质，无任何商业用途</li>
+                </ul>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('movies.dashboard') }}" class="btn btn-primary btn-lg px-5">
+                    <i class="fas fa-home me-2"></i>返回首页
+                </a>
+            </div>
+        </div>
+        <div class="card-footer bg-light text-muted small text-center">
+            <p class="mb-0">
+                依据《中华人民共和国网络安全法》第二十二条，个人网络设备不得危害网络安全。
+                本系统已自动检测到您的IP为内网地址（{{ request.remote_addr }}）。
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

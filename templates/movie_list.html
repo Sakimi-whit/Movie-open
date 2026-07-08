@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}全部电影 - KIRAKIARA{% endblock %}
+
+{% block content %}
+<div style="padding-top: 100px; padding-bottom: 50px; max-width: 1280px; margin: 0 auto; padding-left: 20px; padding-right: 20px;">
+
+    <!-- ===== 页面标题 ===== -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+        <h1 style="color: #fff; font-size: 28px; font-weight: 700; margin: 0;">
+            🎬 全部电影
+            <span style="font-size: 16px; font-weight: 400; color: #9ca3af; margin-left: 12px;">
+                （共 {{ movies.total }} 部）
+            </span>
+        </h1>
+        <a href="{{ url_for('index') }}" style="color: #9ca3af; text-decoration: none; font-size: 14px;">
+            ← 返回首页
+        </a>
+    </div>
+
+    <!-- ===== 搜索和筛选栏 ===== -->
+    <div style="background: #1a1d24; border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 1px solid #2d3139;">
+        <form method="GET" action="{{ url_for('movies.movie_list') }}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <!-- 搜索框 -->
+            <div style="flex: 2; min-width: 200px;">
+                <input type="text" name="keyword" placeholder="🔍 搜索电影名称..."
+                       value="{{ keyword }}"
+                       style="width: 100%; padding: 10px 16px; border-radius: 8px; border: 1px solid #2d3139; background: #0f1115; color: #e5e7eb; font-size: 14px; outline: none;">
+            </div>
+
+            <!-- 类型筛选 -->
+            <div style="flex: 1; min-width: 140px;">
+                <select name="genre" style="width: 100%; padding: 10px 16px; border-radius: 8px; border: 1px solid #2d3139; background: #0f1115; color: #e5e7eb; font-size: 14px; outline: none; cursor: pointer;">
+                    <option value="">📂 全部类型</option>
+                    {% for genre in genre_list %}
+                    <option value="{{ genre }}" {% if genre_filter == genre %}selected{% endif %}>{{ genre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 排序 -->
+            <div style="flex: 1; min-width: 130px;">
+                <select name="sort" style="width: 100%; padding: 10px 16px; border-radius: 8px; border: 1px solid #2d3139; background: #0f1115; color: #e5e7eb; font-size: 14px; outline: none; cursor: pointer;">
+                    <option value="rating" {% if sort_by =='rating' %}selected{% endif %}>⭐ 按评分</option>
+                    <option value="year" {% if sort_by =='year' %}selected{% endif %}>📅 按年份</option>
+                    <option value="title" {% if sort_by =='title' %}selected{% endif %}>🔤 按名称</option>
+                </select>
+            </div>
+
+            <!-- 按钮 -->
+            <div style="display: flex; gap: 8px; flex: 0 0 auto;">
+                <button type="submit" style="padding: 10px 24px; background: #e50914; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">
+                    🔍 搜索
+                </button>
+                <a href="{{ url_for('movies.movie_list') }}" style="padding: 10px 20px; background: transparent; color: #9ca3af; border: 1px solid #2d3139; border-radius: 8px; text-decoration: none; font-size: 14px;">
+                    ↺ 重置
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== 电影网格 ===== -->
+    {% if movies.items %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px;">
+        {% for movie in movies.items %}
+        <div class="movie-card" onclick="location.href='{{ url_for('movies.movie_detail', movie_id=movie.id) }}'">
+            <div class="movie-poster" style="background: {{ movie.bg_color or 'linear-gradient(135deg, #1a3a5c, #0d1f33)' }}">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                <span style="font-size:50px;">🎬</span>
+                {% endif %}
+                <span class="movie-badge" style="background: {% if movie.is_upcoming %}#2196F3{% else %}#e50914{% endif %};">
+                    {% if movie.is_upcoming %}预告{% else %}热映{% endif %}
+                </span>
+                <span class="movie-rating-badge">⭐ {{ movie.rating or '0.0' }}</span>
+                <div class="overlay"><div class="play-icon">▶</div></div>
+            </div>
+            <div class="movie-info">
+                <div class="movie-name">{{ movie.title }}</div>
+                <div class="movie-detail">
+                    <span class="movie-genre">{{ movie.genre.split(',')[0] if movie.genre else '未知' }}</span>
+                    <span>{{ movie.year or '未知' }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ===== 分页 ===== -->
+    {% if movies.pages > 1 %}
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 40px; flex-wrap: wrap;">
+        {% if movies.has_prev %}
+        <a href="{{ url_for('movies.movie_list', page=movies.prev_num, keyword=keyword, genre=genre_filter, sort=sort_by) }}"
+           style="padding: 8px 16px; border-radius: 6px; border: 1px solid #2d3139; color: #9ca3af; text-decoration: none; font-size: 14px;">
+            ← 上一页
+        </a>
+        {% endif %}
+
+        {% for page_num in movies.iter_pages(left_edge=2, left_current=2, right_current=2, right_edge=2) %}
+        {% if page_num %}
+        {% if page_num == movies.page %}
+        <span style="padding: 8px 16px; border-radius: 6px; background: #e50914; color: #fff; font-size: 14px;">{{ page_num }}</span>
+        {% else %}
+        <a href="{{ url_for('movies.movie_list', page=page_num, keyword=keyword, genre=genre_filter, sort=sort_by) }}"
+           style="padding: 8px 16px; border-radius: 6px; border: 1px solid #2d3139; color: #9ca3af; text-decoration: none; font-size: 14px;">
+            {{ page_num }}
+        </a>
+        {% endif %}
+        {% else %}
+        <span style="padding: 8px 16px; color: #555; font-size: 14px;">…</span>
+        {% endif %}
+        {% endfor %}
+
+        {% if movies.has_next %}
+        <a href="{{ url_for('movies.movie_list', page=movies.next_num, keyword=keyword, genre=genre_filter, sort=sort_by) }}"
+           style="padding: 8px 16px; border-radius: 6px; border: 1px solid #2d3139; color: #9ca3af; text-decoration: none; font-size: 14px;">
+            下一页 →
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- ===== 无结果 ===== -->
+    <div style="text-align: center; padding: 80px 20px; color: #9ca3af;">
+        <span style="font-size: 64px; display: block; margin-bottom: 20px;">🔍</span>
+        <h2 style="color: #e5e7eb; font-size: 24px; margin-bottom: 10px;">没有找到匹配的电影</h2>
+        <p style="color: #888; font-size: 16px;">尝试调整搜索关键词或筛选条件</p>
+        <a href="{{ url_for('movies.movie_list') }}" style="display: inline-block; margin-top: 20px; padding: 10px 24px; background: #e50914; color: #fff; border-radius: 8px; text-decoration: none;">
+            查看全部电影
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

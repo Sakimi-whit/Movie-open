@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+                <i class="fas fa-film me-2"></i>{{ movie.title }}
+                <small class="text-muted">({{ movie.year }})</small>
+            </h2>
+            <span class="badge bg-info">内网播放</span>
+        </div>
+        <div class="card-body p-0">
+            <!-- 关键：iframe嵌入 -->
+            <div class="ratio ratio-16x9" style="background: #000;">
+                <iframe
+                        src="{{ embed_url }}"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                        allowfullscreen
+                        scrolling="no"
+                        style="width:100%; height:100%; border:none; min-height:500px;"
+                        id="yfvod-player"
+                ></iframe>
+            </div>
+        </div>
+        <div class="card-footer bg-light text-center py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()">
+                    <i class="fas fa-expand"></i> 全屏
+                </button>
+                <small class="text-muted">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    仅限内网使用 | 无广告 | 非盈利
+                </small>
+                <a href="{{ url_for('movies.movie_detail', movie_id=movie.id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 防反爬脚本（关键！） -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const iframe = document.getElementById('yfvod-player');
+
+            // 1. 设置Referer（绕过基础反爬）
+            iframe.onload = function() {
+                try {
+                    const doc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (doc) {
+                        // 注入Referer
+                        const meta = doc.createElement('meta');
+                        meta.httpEquiv = "Referer";
+                        meta.content = "{{ EMBED_REFERER }}";
+                        doc.head.appendChild(meta);
+                    }
+                } catch (e) {
+                    console.log('无法注入Referer（正常现象）:', e);
+                }
+            };
+
+            // 2. 防检测（模拟用户行为）
+            let lastActivity = Date.now();
+            document.addEventListener('mousemove', () => lastActivity = Date.now());
+            document.addEventListener('keypress', () => lastActivity = Date.now());
+
+            // 3. 自动恢复（当播放器崩溃时）
+            setInterval(() => {
+                if (Date.now() - lastActivity > 30000) {
+                    console.log('检测到无操作，刷新播放器...');
+                    iframe.src += '&refresh=' + Date.now();
+                }
+            }, 60000);
+        });
+
+        // 全屏功能
+        function toggleFullscreen() {
+            const elem = document.querySelector('.ratio');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 错误处理
+        window.onerror = function(msg, url, line) {
+            if (msg.includes('Blocked a frame')) {
+                console.log('检测到跨域限制，尝试备用方案...');
+                document.getElementById('yfvod-player').src =
+                    document.getElementById('yfvod-player').src.replace('www.', 'm.');
+                return true;
+            }
+        };
+    </script>
+
+    <!-- 内网使用提示 -->
+    <div class="alert alert-warning mt-4">
+        <i class="fas fa-user-secret me-2"></i>
+        <strong>内网使用提示：</strong> 此播放器仅限家庭内部网络使用，已屏蔽所有广告和追踪代码。
+        请勿公开传播或用于商业用途。
+    </div>
+</div>
+{% endblock %}

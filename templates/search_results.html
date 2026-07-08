@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}搜索 "{{ query }}" - KIRAKIARA{% endblock %}
+
+{% block content %}
+<style>
+    .search-page-wrapper {
+        padding: 100px 50px 50px;
+        max-width: 1200px;
+        margin: 0 auto;
+        min-height: 100vh;
+    }
+
+    .search-page-header {
+        margin-bottom: 30px;
+    }
+
+    .search-page-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .search-page-count {
+        color: #888;
+        font-size: 15px;
+    }
+
+    .search-page-count span {
+        color: #e50914;
+        font-weight: 600;
+    }
+
+    .search-page-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 25px;
+    }
+
+    .search-page-card {
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.4s ease;
+        background: #1a1a1a;
+    }
+
+    .search-page-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .search-page-poster {
+        width: 100%;
+        height: 280px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 50px;
+        background: linear-gradient(135deg, #1a3a5c, #0d1f33);
+        position: relative;
+    }
+
+    .search-page-poster img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .search-page-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 3px 10px;
+        background: #e50914;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .search-page-badge.upcoming {
+        background: #2196F3;
+    }
+
+    .search-page-rating-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 3px 8px;
+        background: rgba(0,0,0,0.7);
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #ffd700;
+    }
+
+    .search-page-info {
+        padding: 15px;
+    }
+
+    .search-page-name {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .search-page-detail {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #888;
+    }
+
+    .search-page-genre {
+        padding: 2px 8px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 3px;
+    }
+
+    .search-page-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        text-align: center;
+    }
+
+    .search-page-empty span {
+        font-size: 60px;
+        margin-bottom: 20px;
+    }
+
+    .search-page-empty h2 {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+
+    .search-page-empty p {
+        color: #888;
+        font-size: 15px;
+        margin-bottom: 25px;
+    }
+
+    .search-page-empty .btn-back {
+        padding: 10px 28px;
+        background: transparent;
+        border: 2px solid #e50914;
+        color: #e50914;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+    }
+
+    .search-page-empty .btn-back:hover {
+        background: rgba(229,9,20,0.1);
+    }
+
+    @media (max-width: 768px) {
+        .search-page-wrapper { padding: 90px 20px 30px; }
+        .search-page-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+        .search-page-poster { height: 210px; }
+        .search-page-title { font-size: 22px; }
+    }
+</style>
+
+<div class="search-page-wrapper">
+    <div class="search-page-header">
+        <h1 class="search-page-title">
+            {% if query %}搜索 "{{ query }}"{% else %}搜索电影{% endif %}
+        </h1>
+        <p class="search-page-count">
+            {% if query %}
+            找到 <span>{{ total }}</span> 个结果
+            {% else %}
+            请输入关键词搜索电影
+            {% endif %}
+        </p>
+    </div>
+
+    {% if results %}
+    <div class="search-page-grid">
+        {% for movie in results %}
+        <div class="search-page-card" onclick="location.href='{{ url_for('movies.movie_detail', movie_id=movie.id) }}'">
+            <div class="search-page-poster">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+                {% else %}
+                <span>🎬</span>
+                {% endif %}
+                <span class="search-page-badge {{ 'upcoming' if movie.is_upcoming else '' }}">
+                    {{ '预告' if movie.is_upcoming else '电影' }}
+                </span>
+                {% if movie.rating %}
+                <span class="search-page-rating-badge">⭐ {{ movie.rating }}</span>
+                {% endif %}
+            </div>
+            <div class="search-page-info">
+                <div class="search-page-name">{{ movie.title }}</div>
+                <div class="search-page-detail">
+                    <span class="search-page-genre">{{ movie.genre.split(',')[0] if movie.genre else '未知' }}</span>
+                    <span>{{ movie.year }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="search-page-empty">
+        <span>🔍</span>
+        <h2>{% if query %}没有找到 "{{ query }}" 的相关结果{% else %}搜索电影{% endif %}</h2>
+        <p>试试其他关键词，或者浏览首页的热门电影</p>
+        <a href="{{ url_for('index') }}" class="btn-back">返回首页</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

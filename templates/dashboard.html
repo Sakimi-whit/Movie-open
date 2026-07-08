@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心 - KIRAKIARA{% endblock %}
+
+{% block content %}
+<style>
+    /* ==================== 布局基础 ==================== */
+    .dashboard-wrapper {
+        display: flex;
+        gap: 30px;
+        padding: 100px 50px 50px;
+        min-height: 100vh;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* ==================== 左侧侧边栏 ==================== */
+    .dashboard-sidebar {
+        width: 280px;
+        flex-shrink: 0;
+        background: #141414;
+        border-radius: 16px;
+        padding: 30px 20px;
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .profile-card {
+        text-align: center;
+        padding-bottom: 25px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 25px;
+    }
+
+    .avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #e50914;
+        background: #222;
+    }
+
+    .avatar-wrapper {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+
+    .avatar-wrapper:hover .avatar-overlay {
+        opacity: 1;
+    }
+
+    .avatar-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s;
+        border: 3px solid #e50914;
+    }
+
+    .avatar-overlay span {
+        font-size: 12px;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }
+
+    .username { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .join-date { font-size: 13px; color: #777; margin-bottom: 15px; }
+
+    .stats {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        font-size: 13px;
+        color: #aaa;
+    }
+
+    .side-nav { display: flex; flex-direction: column; gap: 6px; }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        color: #bbb;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.25s;
+        text-decoration: none;
+    }
+
+    .nav-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .nav-link.active { background: rgba(229, 9, 20, 0.15); color: #e50914; font-weight: 600; }
+    .nav-link.logout { margin-top: 15px; color: #ff4d4d; }
+    .nav-link.logout:hover { background: rgba(255, 77, 77, 0.1); }
+
+    /* ==================== 右侧主内容区 ==================== */
+    .dashboard-main {
+        flex: 1;
+        min-width: 0;
+        background: #141414;
+        border-radius: 16px;
+        padding: 35px;
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .panel-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 25px;
+        padding-left: 12px;
+        border-left: 4px solid #e50914;
+    }
+
+    .tab-panel { display: none; animation: fadeUp 0.4s ease; }
+    .tab-panel.active { display: block !important; }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==================== 电影网格 & 卡片 ==================== */
+    .movie-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 20px;
+    }
+
+    .movie-card {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        aspect-ratio: 2 / 3;
+        cursor: pointer;
+        transition: transform 0.3s, box-shadow 0.3s;
+        background: #1a1a1a;
+    }
+
+    .movie-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    }
+
+    .movie-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .card-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(transparent 40%, rgba(0,0,0,0.92));
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 15px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .movie-card:hover .card-overlay { opacity: 1; }
+
+    .card-overlay h4 { font-size: 15px; margin-bottom: 6px; line-height: 1.3; }
+    .card-overlay .meta,
+    .card-overlay .watch-time { font-size: 12px; color: #aaa; margin-bottom: 10px; }
+
+    /* ==================== 按钮系统 ==================== */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s;
+        border: none;
+        text-decoration: none;
+        gap: 6px;
+    }
+
+    .btn-primary { background: #e50914; color: #fff; }
+    .btn-primary:hover { background: #ff1a25; transform: scale(1.03); }
+
+    .btn-outline {
+        background: transparent;
+        border: 2px solid #e50914;
+        color: #e50914;
+    }
+    .btn-outline:hover { background: rgba(229,9,20,0.1); }
+
+    /* ==================== 空状态 ==================== */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        text-align: center;
+        color: #666;
+    }
+
+    .empty-state span { font-size: 56px; margin-bottom: 15px; }
+    .empty-state p { font-size: 15px; margin-bottom: 20px; }
+
+    /* ==================== 响应式 ==================== */
+    @media (max-width: 900px) {
+        .dashboard-wrapper {
+            flex-direction: column;
+            padding: 90px 20px 30px;
+        }
+        .dashboard-sidebar {
+            width: 100%;
+            position: static;
+            padding: 20px;
+        }
+        .side-nav { flex-direction: row; flex-wrap: wrap; }
+        .nav-link { flex: 1; min-width: 120px; justify-content: center; }
+        .dashboard-main { padding: 25px 20px; }
+        .movie-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+    }
+</style>
+
+<div class="dashboard-wrapper">
+    <!-- 左侧用户信息 & 导航 -->
+    <aside class="dashboard-sidebar">
+        <div class="profile-card">
+            <div class="avatar-wrapper" id="avatarWrapper">
+                <img src="{{ current_user.avatar_url or 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=e50914&color=fff&size=90' }}" alt="头像" class="avatar" id="avatarImg">
+                <label for="avatarInput" class="avatar-overlay">
+                    <span>更换头像</span>
+                </label>
+                <input type="file" id="avatarInput" name="avatar" accept="image/*" style="display:none">
+            </div>
+            <h3 class="username">{{ current_user.username }}</h3>
+            <p class="join-date">加入于 {{ current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else '近期' }}</p>
+            <div class="stats">
+                <span>🎬 观看 {{ history|length|default(0) }}</span>
+                <span>❤️ 收藏 {{ favorites|length|default(0) }}</span>
+            </div>
+        </div>
+
+        <nav class="side-nav">
+            <a href="#history" class="nav-link active" data-tab="history">📜 观看历史</a>
+            <a href="#favorites" class="nav-link" data-tab="favorites">❤️ 我的收藏</a>
+            <a href="#settings" class="nav-link" data-tab="settings">⚙️ 账户设置</a>
+            <a href="{{ url_for('auth.logout') }}" class="nav-link logout">🚪 退出登录</a>
+        </nav>
+    </aside>
+
+    <!-- 右侧内容 -->
+    <main class="dashboard-main">
+        <!-- 观看历史 -->
+        <section id="history" class="tab-panel active">
+            <h2 class="panel-title">最近观看</h2>
+            {% if history %}
+            <div class="movie-grid">
+                {% for item in history %}
+                <div class="movie-card" onclick="location.href='{{ url_for('movies.movie_detail', movie_id=item.movie_id) }}';">
+                    <img src="{{ item.poster_url or '/static/posters/default.jpg' }}" alt="{{ item.title }}" loading="lazy">
+                    <div class="card-overlay">
+                        <h4>{{ item.title }}</h4>
+                        <p class="watch-time">观看于 {{ item.watched_at.strftime('%m-%d %H:%M') if item.watched_at else '近期' }}</p>
+                        <a href="{{ url_for('movies.movie_detail', movie_id=item.movie_id) }}" class="btn btn-primary">继续观看</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span>🍿</span>
+                <p>暂无观看记录，快去探索电影吧！</p>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">前往首页</a>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- 我的收藏 -->
+        <section id="favorites" class="tab-panel">
+            <h2 class="panel-title">我的收藏</h2>
+            {% if favorites %}
+            <div class="movie-grid">
+                {% for movie in favorites %}
+                <div class="movie-card" onclick="location.href='{{ url_for('movies.movie_detail', movie_id=movie.id) }}';">
+                    {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" loading="lazy">
+                    {% else %}
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:50px;color:#555;">🎬</div>
+                    {% endif %}
+                    <div class="card-overlay">
+                        <h4>{{ movie.title }}</h4>
+                        <p class="meta">{{ movie.year or '未知' }} · {{ movie.genre or '未知' }}</p>
+                        <a href="{{ url_for('movies.movie_detail', movie_id=movie.id) }}" class="btn btn-primary">查看详情</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span>❤️</span>
+                <p>还没有收藏的电影，去首页发现好片吧！</p>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">前往首页</a>
+            </div>
+            {% endif %}
+        </section>
+        <!-- 账户设置 -->
+        <section id="settings" class="tab-panel">
+            <h2 class="panel-title">账户设置</h2>
+            <form method="POST" action="{{ url_for('dashboard.update_profile') }}" style="max-width:500px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="margin-bottom:20px;">
+                    <label style="color:#aaa; font-size:13px; display:block; margin-bottom:6px;">用户昵称</label>
+                    <input type="text" name="username" value="{{ current_user.username }}" style="width:100%; padding:12px 16px; background:#2a2a2a; border:2px solid #333; border-radius:8px; color:#fff; font-size:14px;">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="color:#aaa; font-size:13px; display:block; margin-bottom:6px;">邮箱地址</label>
+                    <input type="email" name="email" value="{{ current_user.email }}" style="width:100%; padding:12px 16px; background:#2a2a2a; border:2px solid #333; border-radius:8px; color:#fff; font-size:14px;">
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline">返回首页</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 标签页切换逻辑
+            document.querySelectorAll('.nav-link[data-tab]').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('.nav-link').forEach(function(l) { l.classList.remove('active'); });
+                    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+
+                    this.classList.add('active');
+                    var target = document.getElementById(this.dataset.tab);
+                    if (target) target.classList.add('active');
+
+                    history.replaceState(null, '', '#' + this.dataset.tab);
+                });
+            });
+
+            // 2. 页面加载时根据 URL hash 激活对应标签
+            var hash = location.hash.replace('#', '');
+            if (hash) {
+                var targetLink = document.querySelector('.nav-link[data-tab="' + hash + '"]');
+                if (targetLink) targetLink.click();
+            }
+
+            // 3. 头像上传
+            var avatarInput = document.getElementById('avatarInput');
+            var avatarImg = document.getElementById('avatarImg');
+            if (avatarInput && avatarImg) {
+                avatarInput.addEventListener('change', function() {
+                    if (this.files && this.files[0]) {
+                        var formData = new FormData();
+                        formData.append('avatar', this.files[0]);
+                        formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+                        fetch('{{ url_for("dashboard.upload_avatar") }}', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(function(res) { return res.json(); })
+                            .then(function(data) {
+                                if (data.success) {
+                                    avatarImg.src = data.url + '?t=' + Date.now();
+                                    alert('头像更新成功！');
+                                } else {
+                                    alert(data.message || '上传失败');
+                                }
+                            })
+                            .catch(function() {
+                                alert('上传失败，请重试');
+                            });
+                    }
+                });
+            }
+        });
+    })();
+
+    // ===== URL hash 变化时切换标签（兜底方案） =====
+    window.addEventListener('hashchange', function() {
+        var hash = location.hash.replace('#', '');
+        if (!hash) return;
+        var link = document.querySelector('.nav-link[data-tab="' + hash + '"]');
+        if (link) {
+            document.querySelectorAll('.nav-link').forEach(function(l) { l.classList.remove('active'); });
+            document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+            link.classList.add('active');
+            var panel = document.getElementById(hash);
+            if (panel) panel.classList.add('active');
+        }
+    });
+</script>
+{% endblock %}

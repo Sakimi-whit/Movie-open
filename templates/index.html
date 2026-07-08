@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}KIRAKIARA - 您的私人影院{% endblock %}
+
+{% block content %}
+<!-- ===== 轮播图 ===== -->
+<section class="carousel-section">
+    <!-- ===== 影院装饰元素 ===== -->
+    <div class="film-strip-left"></div>
+    <div class="film-strip-right"></div>
+    <div class="projector-light"></div>
+    <div class="grain-overlay"></div>
+
+    <div class="carousel-container" id="carouselContainer">
+        {% for carousel in carousels %}
+        <div class="carousel-slide {{ carousel.bg_class }}">
+            <div class="slide-bg"></div>
+            <div class="slide-poster">
+                {% if carousel.poster_url %}
+                <img src="{{ carousel.poster_url }}"
+                     alt="{{ carousel.title }}"
+                     style="width:100%; height:100%; object-fit:cover; border-radius:12px;">
+                {% else %}
+                <span style="font-size:60px;opacity:0.6;">🎬</span>
+                {% endif %}
+            </div>
+            <div class="slide-content">
+                <div class="slide-tag">{{ carousel.tag | default('推荐') }}</div>
+                <h1 class="slide-title">{{ carousel.title }}</h1>
+                <div class="slide-meta">
+                    <span class="rating">⭐ {{ carousel.rating }}</span>
+                    <span>|</span>
+                    <span>{{ carousel.year }}</span>
+                    <span>|</span>
+                    <span>{{ carousel.genre }}</span>
+                    <span>|</span>
+                    <span>{{ carousel.duration }}分钟</span>
+                </div>
+                <p class="slide-desc">{{ carousel.description | default('精彩影片，不容错过！') }}</p>
+                <div class="slide-buttons">
+                    {% if carousel.movie_id %}
+                    <a href="{{ url_for('movies.movie_detail', movie_id=carousel.movie_id) }}" class="btn-play">▶ 立即播放</a>
+                    <a href="{{ url_for('movies.movie_detail', movie_id=carousel.movie_id) }}" class="btn-info">ℹ 详细信息</a>
+                    {% else %}
+                    <span class="btn-play" style="opacity:0.5;cursor:not-allowed;">▶ 暂未关联</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- 没有轮播图时的占位 -->
+        <div class="carousel-slide slide-1">
+            <div class="slide-bg"></div>
+            <div class="slide-content" style="text-align:center;max-width:100%;">
+                <h1 style="font-size:40px;">🎬 暂无轮播内容</h1>
+                <p style="color:#888;font-size:18px;margin-top:15px;">请将图片放入 static/carousel/ 文件夹</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 轮播控制按钮 -->
+    {% if carousels|length > 1 %}
+    <button class="carousel-arrow arrow-left" onclick="prevSlide();">❮</button>
+    <button class="carousel-arrow arrow-right" onclick="nextSlide();">❯</button>
+    {% endif %}
+
+    <!-- 轮播指示器 -->
+    <div class="carousel-indicators" id="indicators">
+        {% for i in range(carousels | length) %}
+        <button class="indicator {{ 'active' if loop.first else '' }}" onclick="goToSlide({{ i }});"></button>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ===== 正在热映 ===== -->
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">🔥 正在热映</h2>
+        <a href="{{ url_for('movies.movie_list') }}" class="view-all">查看全部 →</a>
+    </div>
+
+    {% if hot_movies %}
+    <div class="movies-grid">
+        {% for movie in hot_movies %}
+        <div class="movie-card" onclick="location.href='{{ url_for('movies.movie_detail', movie_id=movie.id) }}'">
+            <div class="movie-poster" style="background: {{ movie.bg_color or 'linear-gradient(135deg, #1a3a5c, #0d1f33)' }}">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                <span style="font-size:50px;">🎬</span>
+                {% endif %}
+                <span class="movie-badge">热映</span>
+                <span class="movie-rating-badge">⭐ {{ movie.rating | default('0.0') }}</span>
+                <div class="overlay"><div class="play-icon">▶</div></div>
+            </div>
+            <div class="movie-info">
+                <div class="movie-name">{{ movie.title }}</div>
+                <div class="movie-detail">
+                    <span class="movie-genre">{{ movie.genre.split(',')[0] if movie.genre else '未知' }}</span>
+                    <span>{{ movie.year | default('未知') }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px 0;color:#666;">
+        <span style="font-size:48px;">🎬</span>
+        <p style="margin-top:12px;">暂无热映影片，请先初始化电影数据</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- ===== 即将上映 ===== -->
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">📅 即将上映</h2>
+        <a href="{{ url_for('movies.movie_list') }}?upcoming=true" class="view-all">查看全部 →</a>
+    </div>
+
+    {% if upcoming_movies %}
+    <div class="movies-grid">
+        {% for movie in upcoming_movies %}
+        <div class="movie-card" onclick="location.href='{{ url_for('movies.movie_detail', movie_id=movie.id) }}'">
+            <div class="movie-poster" style="background: {{ movie.bg_color or 'linear-gradient(135deg, #2d1b32, #44194b)' }}">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                <span style="font-size:50px;">🎬</span>
+                {% endif %}
+                <span class="movie-badge" style="background:#2196F3;">预告</span>
+                <span class="movie-rating-badge">⭐ {{ movie.rating | default('0.0') }}</span>
+                <div class="overlay"><div class="play-icon">▶</div></div>
+            </div>
+            <div class="movie-info">
+                <div class="movie-name">{{ movie.title }}</div>
+                <div class="movie-detail">
+                    <span class="movie-genre">{{ movie.genre.split(',')[0] if movie.genre else '未知' }}</span>
+                    <span>{{ movie.year | default('未知') }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px 0;color:#666;">
+        <span style="font-size:48px;">📅</span>
+        <p style="margin-top:12px;">暂无即将上映影片</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
